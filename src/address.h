@@ -29,6 +29,8 @@ public:
   Addr &operator=(const Addr &);
   Addr &operator=(Addr &&) noexcept;
 
+  void swap(Addr &other) noexcept;
+
   bool is_ipv4() const;
   bool is_ipv6() const;
   const AddrV4& as_ipv4() const;

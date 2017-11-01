@@ -8,7 +8,7 @@ include_directories(src)
 enable_testing()
 add_subdirectory(test)
 
-add_test(NAME MyTest COMMAND Test)
+add_test(CoroTests Test --log_level=test_suite)
 
 add_executable(demo main.cpp)
 target_link_libraries(demo Coro)

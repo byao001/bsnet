@@ -75,7 +75,7 @@ AddrV6 AddrV6::from(const std::string &addr) {
   size_t ip_len = 0;
   for (int i = 0; i < addr.size(); ++i) {
     if (addr[i] == '[') {
-      ip_start = i + 1;
+      ip_start = static_cast<unsigned>(i + 1);
     } else if (addr[i] == ']') {
       colon = 0;
     } else if (addr[i] == ':') {
@@ -92,12 +92,19 @@ AddrV6 AddrV6::from(const std::string &addr) {
     }
   }
   const char *ip = addr.substr(ip_start, ip_len).c_str();
-  uint16_t port = static_cast<uint16_t>(std::stoi(addr.substr(colon + 1)));
+  uint16_t port = static_cast<uint16_t>(
+      std::stoi(addr.substr(static_cast<unsigned>(colon + 1))));
   return AddrV6(ip, port);
 }
 
 Addr::Addr() : _addr(new struct sockaddr_storage) {}
 Addr::~Addr() { delete _addr; }
+
+void Addr::swap(Addr &other) noexcept {
+  using std::swap;
+  swap(_addr, other._addr);
+}
+
 /*
  * Construct from other Addr
  */
@@ -105,21 +112,21 @@ Addr::Addr(const Addr &other) : Addr() {
   memcpy(_addr, other._addr, sizeof(sockaddr_storage));
 }
 Addr::Addr(Addr &&other) noexcept : _addr(nullptr) {
-  std::swap(_addr, other._addr);
+  swap(other);
 }
 Addr &Addr::operator=(const Addr &other) {
   memcpy(_addr, other._addr, sizeof(sockaddr_storage));
   return *this;
 }
 Addr &Addr::operator=(Addr &&other) noexcept {
-  std::swap(_addr, other._addr);
+  swap(other);
   return *this;
 }
 
 /*
  * Convert to V4 and V6
  */
-const AddrV4& Addr::as_ipv4() const {
+const AddrV4 &Addr::as_ipv4() const {
   if (_addr->ss_family != AF_INET) {
     throw invalid_address("not ipv4");
   }
@@ -127,7 +134,7 @@ const AddrV4& Addr::as_ipv4() const {
   return *v4;
 }
 
-const AddrV6& Addr::as_ipv6() const {
+const AddrV6 &Addr::as_ipv6() const {
   if (_addr->ss_family != AF_INET6) {
     throw invalid_address("not ipv6");
   }

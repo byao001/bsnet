@@ -5,5 +5,5 @@ include_directories(${TEST_SOURCE_DIR}/src
 add_definitions(-DBOOST_TEST_DYN_LINK)
 include_directories(../src)
 
-add_executable(Test test_addr.cpp test_buffer.cpp)
+add_executable(Test test_main.cpp test_addr.cpp test_buffer.cpp)
 target_link_libraries(Test Coro ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})

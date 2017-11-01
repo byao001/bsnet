@@ -12,49 +12,28 @@ namespace bsnet {
 
 using byte_t = std::uint8_t;
 
-/*
-   * A circular buffer, which is used in the Buffer class.
-   *   Reading and writing the circular buffers should be non-exhuasting
-   * or non-exceeding.
-   *   It's Buffer's responsibility to check the size of the circular
-   * buffer and resize if neccessary.
-   */
+template<typename Buf> class Buffer;
+
+/**
+ * A circular buffer, which is used in the Buffer class.
+ *   Reading and writing the circular buffers should be non-exhuasting
+ *   or non-exceeding.
+ *   It's Buffer's responsibility to check the size of the circular
+ *   buffer and resize if neccessary.
+ */
 class ringbuf_t {
 public:
   using size_type = int;
 
-  explicit ringbuf_t(size_type cap)
-      : _data(new std::uint8_t[cap]), _capacity(cap), _size(0), _begin(0) {}
+  explicit ringbuf_t(size_type cap);
+  ~ringbuf_t();
 
-  ~ringbuf_t() { delete[] _data; }
+  ringbuf_t(const ringbuf_t &other);
+  ringbuf_t(ringbuf_t &&other) noexcept;
+  ringbuf_t &operator=(ringbuf_t other);
+  ringbuf_t &operator=(ringbuf_t &&other) noexcept;
 
-  ringbuf_t(const ringbuf_t &other)
-      : _data(new std::uint8_t[other._capacity]), _capacity(other._capacity),
-        _size(other._size), _begin(other._begin) {}
-
-  ringbuf_t(ringbuf_t &&other) noexcept : _data(nullptr) {
-    std::swap(_data, other._data);
-    std::swap(_capacity, other._capacity);
-    std::swap(_size, other._size);
-    std::swap(_begin, other._begin);
-  }
-
-  ringbuf_t &operator=(ringbuf_t other) {
-    swap(other);
-    return *this;
-  }
-
-  ringbuf_t &operator=(ringbuf_t &&other) noexcept {
-    swap(other);
-    return *this;
-  }
-
-  void swap(ringbuf_t &other) {
-    std::swap(_data, other._data);
-    std::swap(_capacity, other._capacity);
-    std::swap(_size, other._size);
-    std::swap(_begin, other._begin);
-  }
+  void swap(ringbuf_t &other) noexcept;
 
   bool empty() const { return _size == 0; }
   bool full() const { return _size == _capacity; }
@@ -71,60 +50,44 @@ public:
    */
   size_type writable_bytes() const { return _capacity - _size; }
 
-  /*
+  /**
    * Retrieve data from buffer.
-   *
-   * Require size to be smaller than readable bytes.
+   * @param data
+   * @param size Require size <= readable_bytes().
+   * @return
    */
-  size_type retrieve(void *data, size_type size) {
-    size_type bytes = std::min(size, readable_bytes());
-    size_type part = std::min(bytes, _capacity - _begin);
-    memcpy(data, _data + _begin, part);
-    if (bytes > part) {
-      memcpy(static_cast<byte_t *>(data) + part, _data, bytes - part);
-    }
-    // update size and _begin index.
-    read(bytes);
-    return bytes;
-  }
+  size_type retrieve(void *data, size_type size);
 
-  /*
+  /**
+   * Retrieve all the data from buffer.
+   * @param data require sizeof(data[]) >= size()
+   * @return
+   */
+  size_type retrieve_all(void *data);
+
+  /**
    * Append data to buffer.
-   *
-   * Require size to be smaller than writable bytes.
+   * @param data input data
+   * @param size require size < writable_bytes()
+   * @return actually appended size.
    */
-  size_type append(const void *data, size_type size) {
-    size_type bytes = std::min(size, writable_bytes());
-    size_type tail = (_begin + _size) % _capacity;
-    size_type part = std::min(bytes, _capacity - tail);
-    memcpy(_data + tail, data, part);
-    if (bytes > part) {
-      memcpy(_data, static_cast<const byte_t*>(data) + part, bytes - part);
-    }
-    // update size and _end index.
-    write(bytes);
-    return bytes;
-  }
+  size_type append(const void *data, size_type size);
 
-  /*
-   * Resize the buffer, expand the size to twice
+  /**
+   * Resize the buffer, expand the size to twice.
+   * @return updated self.
    */
-  void expand() {
-    using value_type = std::uint8_t;
-    byte_t *new_data = new byte_t[_capacity * 2];
+  ringbuf_t &expand();
 
-    size_type part = std::min(_size, _capacity - _begin);
-    memcpy(new_data, _data + _begin, part);
-    if (_size > part) {
-      memcpy(new_data + part, _data, _size - part);
-    }
-    _capacity *= 2;
-    _begin = 0;
-    delete[] _data;
-    _data = new_data;
-  }
+  /**
+   * Resize the buffer, expand the specified size.
+   * If the @param size < capacity(), then do nothing.
+   * @param size
+   * @return
+   */
+  ringbuf_t &reserve(size_type size);
 
-  friend class Buffer;
+  friend class Buffer<ringbuf_t>;
 
 private:
   /*
@@ -146,29 +109,113 @@ private:
   int _begin;
 };
 
-class Buffer {
+void swap(ringbuf_t &lhs, ringbuf_t &rhs);
+
+/**
+ * Network Buffer, used to cache data which is sent to or received from
+ * networks.
+ * The network Buffer hav value semantic, which means it si copyable and
+ * movable.
+ *
+ * @tparam TBuf inner byte buffer, the inner buffer is not required to resize
+ *             automatically when space is not enough. Buffer will check the
+ *             size and resize manually.
+ *
+ *  The inner byte buffer is required to have following interface:
+ *      + constructor(size_type s);
+ *      + copy and move ctor, copy and move assign operator.
+ *      + void swap(But&) nonexpt;
+ *      + bool empty() const;
+ *      + bool full() const;
+ *      + size_type size() const;
+ *      + size_tyep capacity() const;
+ *      + size_type readable_bytes() const;
+ *      + size_type writable_bytes() const;
+ *      + size_type retrieve(void *data, size_type size);
+ *      + size_type retrieve_all(void *data);
+ *      + size_type append(const void *data, size_type size);
+ *      + Buf& expand();
+ *      + Buf& reserve(size_type size);
+ */
+template<typename TBuf = ringbuf_t> class Buffer {
 public:
+  using size_type = typename TBuf::size_type;
   static const std::size_t DefaultInitSize = 1024;
 
-  Buffer(int len);
-  ~Buffer();
+  explicit Buffer(int len = DefaultInitSize) : _buf(len) {}
+  // implicitly generated copy and move ctor, and dtor
 
-  Buffer(const Buffer &other);
-  Buffer(Buffer &&other) noexcept;
-  Buffer &operator=(const Buffer &other);
-  Buffer &operator=(Buffer &&other) noexcept;
+  void swap(Buffer<TBuf> &other) noexcept { _buf.swap(other._buf); }
 
-  void swap(Buffer &other);
-  void retrieve(int size);
-  void retrieve_all();
-  const byte_t *peek();
-  const void append(const void *data, std::size_t size);
-  const void append(const std::string &str);
+  ///
+  /// Properties fo the buffer, just similar to the inner buffer,
+  /// which in default case, is ringbuf_t.
+  bool empty() const { return _buf.empty(); }
+  bool full() const { return _buf.full(); }
+  size_type size() const { return _buf.size(); }
+  size_type capacity() const { return _buf.capacity(); }
 
-  int readable_bytes() const;
-  int writable_bytes() const;
+  /**
+   * Forward to inner buffer's retrieve method.
+   * @param data
+   * @param size
+   * @return
+   */
+  size_type retrieve(void *data, size_type size) {
+    return _buf.retrieve(data, size);
+  }
+
+  /**
+   * Forward to inner buffer's retrieve_all method.
+   * @param data
+   * @return
+   */
+  size_type retrieve_all(void *data) { return _buf.retrieve_all(data); }
+
+  /**
+   * Retrieve bytes and return the bytes as a string.
+   * @param size
+   * @return
+   */
+  std::string retrieve_string(size_type size) {
+    char bf[1024];
+    std::string s;
+    while (size > 1024) {
+      retrieve(&bf[0], 1024);
+      s.append(&bf[0], 1024);
+      size -= 1024;
+    }
+    retrieve(&bf[0], size);
+    s.append(&bf[0], size);
+    return s;
+  }
+
+  /**
+   * Append specified size of data to the inner buffer. When inner buffer
+   * doesn't have enough space,
+   * expand the inner buffer automatically.
+   * @param data
+   * @param size
+   */
+  const void append(const void *data, size_type size) {
+    if (size > _buf.writable_bytes()) {
+      if (_buf.expand().writable_bytes() < size)
+        _buf.reserve(_buf.size() + size);
+    }
+    _buf.append(data, size);
+  }
+
+  /**
+   * Append a string as bytes to the inner buffer.
+   * @param str
+   */
+  const void append(const std::string &str) { append(str.c_str(), str.size()); }
 
 private:
+  TBuf _buf;
 };
-}
 
+template<typename TBuf> void swap(Buffer<TBuf> &lhs, Buffer<TBuf> &rhs) {
+  lhs.swap(rhs);
+}
+}
