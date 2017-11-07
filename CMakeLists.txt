@@ -8,7 +8,8 @@ include_directories(src)
 enable_testing()
 add_subdirectory(test)
 
-add_test(CoroTests Test --log_level=test_suite)
+add_test(AddrTest test/AddrTest)
+add_test(BufferTest test/BufferTest)
 
 add_executable(demo main.cpp)
 target_link_libraries(demo Coro)

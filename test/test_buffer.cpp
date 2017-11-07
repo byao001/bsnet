@@ -1,13 +1,17 @@
 //
 // Created by pandabo on 10/31/17.
 //
+
+#define BOOST_TEST_MODULE BufferTest
 #include <boost/test/unit_test.hpp>
 #include <queue>
 #include <random>
 
 #include "buffer.h"
+
 using namespace boost::unit_test;
 using namespace bsnet;
+
 
 struct BufferFixture {
   BufferFixture() : s(100, 'a'), cap(128) {

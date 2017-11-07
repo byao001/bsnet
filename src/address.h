@@ -7,6 +7,7 @@
 
 #include <netdb.h>
 #include <string>
+#include <stdexcept>
 #include <sys/socket.h>
 
 namespace bsnet {

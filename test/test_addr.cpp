@@ -1,9 +1,11 @@
 //
 // Created by pandabo on 10/29/17.
 //
+#define BOOST_TEST_MODULE AddrTest
 #include <boost/test/unit_test.hpp>
 
 #include "address.h"
+
 
 using namespace bsnet;
 
@@ -30,14 +32,24 @@ BOOST_AUTO_TEST_CASE(test_V4_from) { // NOLINT
 
 BOOST_AUTO_TEST_CASE(test_V6_from) { // NOLINT
   const char *ip = "53d:332:afe::13";
-  in_port_t port = 4000;
+  uint16_t port = 4000;
   AddrV6 addr(ip, port);
 
   char buf[32];
   int s = snprintf(&buf[0], 32, "[%s]:%d", ip, port);
 
-  AddrV6 from_addr = AddrV6::from(std::string(&buf[0], static_cast<u_long>(s)));
+  std::string addrs(&buf[0], static_cast<unsigned long>(s));
 
+  AddrV6 from_addr = AddrV6::from(addrs);
+
+  auto a1 = reinterpret_cast<const struct sockaddr_in6*>(addr.get_sockaddr());
+  auto a2 = reinterpret_cast<const struct sockaddr_in6*>(from_addr.get_sockaddr());
+  BOOST_CHECK_EQUAL(a1->sin6_family, a2->sin6_family);
+  BOOST_CHECK_EQUAL(a1->sin6_port, a2->sin6_port);
+  BOOST_CHECK_EQUAL(a1->sin6_flowinfo,a2->sin6_flowinfo);
+  BOOST_CHECK_EQUAL(a1->sin6_scope_id,a2->sin6_scope_id);
+  BOOST_CHECK_EQUAL(memcmp(&a1->sin6_addr, &a2->sin6_addr, sizeof(struct in6_addr)), 0);
+  
   BOOST_CHECK(memcmp(addr.get_sockaddr(), from_addr.get_sockaddr(),
                      sizeof(struct sockaddr_in6)) == 0);
   BOOST_CHECK_THROW(AddrV6::from(ip), invalid_address);

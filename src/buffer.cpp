@@ -1,7 +1,9 @@
 //
 // Created by pandabo on 10/31/17.
 //
+#include <cstring>
 #include "buffer.h"
+
 
 namespace bsnet {
 
