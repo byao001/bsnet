@@ -1,26 +1,24 @@
 //
-// Created by pandabo on 10/31/17.
+// Created by byao on 10/31/17.
+// Copyright (c) 2017 byao. All rights reserved.
 //
-
-#define BOOST_TEST_MODULE BufferTest
-#include <boost/test/unit_test.hpp>
+#include "buffer.h"
+#include "gtest/gtest.h"
 #include <queue>
 #include <random>
 
-#include "buffer.h"
-
-using namespace boost::unit_test;
 using namespace bsnet;
 
+struct BufferFixture : ::testing::Test {
+  BufferFixture() : s(100, 'a'), cap(128), default_buffer_size(65535) {}
+  ~BufferFixture() override = default;
 
-struct BufferFixture {
-  BufferFixture() : s(100, 'a'), cap(128) {
-    BOOST_TEST_MESSAGE("setup ring buffer fixture");
-  }
-  ~BufferFixture() { BOOST_TEST_MESSAGE("teardown ring buffer fixture"); }
+  void SetUp() override {}
+  void TearDown() override {}
 
   std::string s;
   ringbuf_t::size_type cap;
+  int default_buffer_size;
 };
 
 void fill_random(void *data, int len) {
@@ -34,24 +32,22 @@ void fill_random(void *data, int len) {
   }
 }
 
-BOOST_FIXTURE_TEST_SUITE(test_ringbuf, BufferFixture) // NOLINT
-
-BOOST_AUTO_TEST_CASE(construct) // NOLINT
+TEST_F(BufferFixture, construct) // NOLINT
 {
   ringbuf_t buf(cap);
-  BOOST_CHECK_EQUAL(buf.capacity(), cap);
-  BOOST_CHECK_EQUAL(buf.size(), 0);
-  BOOST_CHECK(buf.empty());
-  BOOST_CHECK(!buf.full());
-  BOOST_CHECK_EQUAL(buf.readable_bytes(), 0);
-  BOOST_CHECK_EQUAL(buf.writable_bytes(), cap);
+  EXPECT_EQ(buf.capacity(), cap);
+  EXPECT_EQ(buf.size(), 0);
+  EXPECT_TRUE(buf.empty());
+  EXPECT_FALSE(buf.full());
+  EXPECT_EQ(buf.readable_bytes(), 0);
+  EXPECT_EQ(buf.writable_bytes(), cap);
 }
 
-BOOST_AUTO_TEST_CASE(append_retrieve) // NOLINT
+TEST_F(BufferFixture, append_retrieve) // NOLINT
 {
-  byte_t inputbuf[65535];
-  byte_t buf_output[65535];
-  byte_t que_output[65535];
+  byte_t inputbuf[default_buffer_size];
+  byte_t buf_output[default_buffer_size];
+  byte_t que_output[default_buffer_size];
 
   ringbuf_t buf(cap);
   std::queue<byte_t> q;
@@ -59,11 +55,11 @@ BOOST_AUTO_TEST_CASE(append_retrieve) // NOLINT
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis(0, 1);
-  std::uniform_int_distribution<> len_dis(1, 65535);
+  std::uniform_int_distribution<> len_dis(1, default_buffer_size);
 
   int loop = 1000;
   while (loop--) {
-    BOOST_ASSERT(buf.size() == q.size());
+    EXPECT_EQ(buf.size(), q.size());
 
     if (dis(gen)) {
       auto len = len_dis(gen);
@@ -87,55 +83,7 @@ BOOST_AUTO_TEST_CASE(append_retrieve) // NOLINT
       }
       // retrieve data from buf.
       buf.retrieve(&buf_output[0], len);
-      BOOST_ASSERT(memcmp(&buf_output[0], &que_output[0], len) == 0);
+      ASSERT_EQ(memcmp(&buf_output[0], &que_output[0], len), 0);
     }
   }
 }
-
-BOOST_AUTO_TEST_SUITE_END() // NOLINT
-
-BOOST_FIXTURE_TEST_SUITE(test_buffer, BufferFixture) // NOLINT
-
-BOOST_AUTO_TEST_CASE(append_retrieve) // NOLINT
-{
-  byte_t inputbuf[65535];
-  byte_t buf_output[65535];
-  byte_t que_output[65535];
-
-  Buffer<ringbuf_t> buf(cap);
-  std::queue<byte_t> q;
-
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> dis(0, 1);
-  std::uniform_int_distribution<> len_dis(1, 65535);
-
-  int loop = 1000;
-  while (loop--) {
-    BOOST_ASSERT(buf.size() == q.size());
-
-    if (dis(gen)) {
-      int len = len_dis(gen);
-      fill_random(&inputbuf[0], len);
-
-      // push data to queue.
-      for (int i = 0; i < len; ++i) {
-        q.push(inputbuf[i]);
-      }
-      // append data to buf.
-      buf.append(&inputbuf[0], len);
-    } else {
-      auto len = std::min(buf.size(), len_dis(gen));
-      // take data from queue.
-      for (int i = 0; i < len; ++i) {
-        que_output[i] = q.front();
-        q.pop();
-      }
-      // retrieve data from buf.
-      buf.retrieve(&buf_output[0], len);
-      BOOST_ASSERT(memcmp(&buf_output[0], &que_output[0], len) == 0);
-    }
-  }
-}
-
-BOOST_AUTO_TEST_SUITE_END() // NOLINT

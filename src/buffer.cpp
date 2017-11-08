@@ -1,5 +1,6 @@
 //
-// Created by pandabo on 10/31/17.
+// Created by byao on 10/30/17.
+// Copyright (c) 2017 byao. All rights reserved.
 //
 #include "buffer.h"
 #include <cstring>

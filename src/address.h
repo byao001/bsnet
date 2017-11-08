@@ -1,13 +1,16 @@
 //
 // Created by afei on 9/23/16.
 //
+// Created by byao on 10/30/17.
+// Copyright (c) 2017 byao. All rights reserved.
+//
 
 #ifndef NETWORK_ADDRESS_H
 #define NETWORK_ADDRESS_H
 
 #include <netdb.h>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <sys/socket.h>
 
 namespace bsnet {
@@ -34,8 +37,8 @@ public:
 
   bool is_ipv4() const;
   bool is_ipv6() const;
-  const AddrV4& as_ipv4() const;
-  const AddrV6& as_ipv6() const;
+  const AddrV4 &as_ipv4() const;
+  const AddrV6 &as_ipv6() const;
   const sockaddr_storage *get_sockaddr() const;
 
 protected:

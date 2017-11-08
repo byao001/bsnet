@@ -1,15 +1,53 @@
-set(Boost_USE_STATIC_LIBS OFF) 
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+# We need thread support
+find_package(Threads REQUIRED)
 
-if(Boost_FOUND)
-  include_directories(${TEST_SOURCE_DIR}/src, ${Boost_INCLUDE_DIRS})
-  add_executable(AddrTest test_addr.cpp)
-  target_link_libraries(AddrTest Coro ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
-  add_executable(BufferTest test_buffer.cpp)
-  target_link_libraries(BufferTest Coro ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
-  add_definitions(-DBOOST_TEST_DYN_LINK)
-endif()
-  
+# Enable ExternalProject CMake module
+include(ExternalProject)
 
+# Download and install GoogleTest
+ExternalProject_Add(
+        gtest
+        URL https://github.com/google/googletest/archive/master.zip
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest
+        # Disable install step
+        INSTALL_COMMAND ""
+)
+
+# Get GTest source and binary directories from CMake project
+ExternalProject_Get_Property(gtest source_dir binary_dir)
+
+# Create a libgtest target to be used as a dependency by test programs
+add_library(libgtest IMPORTED STATIC GLOBAL)
+add_dependencies(libgtest gtest)
+
+# Set libgtest properties
+set_target_properties(libgtest PROPERTIES
+        "IMPORTED_LOCATION" "${binary_dir}/googlemock/gtest/libgtest.a"
+        "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+        )
+
+# Create a libgmock target to be used as a dependency by test programs
+add_library(libgmock IMPORTED STATIC GLOBAL)
+add_dependencies(libgmock gtest)
+
+# Set libgmock properties
+set_target_properties(libgmock PROPERTIES
+        "IMPORTED_LOCATION" "${binary_dir}/googlemock/libgmock.a"
+        "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+        )
+
+# I couldn't make it work with INTERFACE_INCLUDE_DIRECTORIES
+include_directories("${source_dir}/googletest/include"
+        "${source_dir}/googlemock/include")
+
+
+set(SRCS main.cpp test_addr.cpp test_buffer.cpp)
+add_executable(testbsnet ${SRCS})
+
+target_link_libraries(testbsnet
+        libbsnet
+        libgtest
+        libgmock
+        )
+
+install(TARGETS testbsnet DESTINATION bin)

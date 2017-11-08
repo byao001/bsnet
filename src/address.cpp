@@ -1,10 +1,11 @@
 //
-// Created by afei on 9/23/16.
+// Created by byao on 9/23/16.
+// Copyright (c) 2017 byao. All rights reserved.
 //
 #include "address.h"
 #include <arpa/inet.h>
-#include <cstring>
 #include <cstdint>
+#include <cstring>
 
 using namespace std;
 
@@ -92,10 +93,11 @@ AddrV6 AddrV6::from(const std::string &addr) {
   }
   if (ip_start == 0 || ip_len == 0 || colon <= 0)
     throw invalid_address("not valid ipv6");
-  
+
   string ip = addr.substr(ip_start, ip_len);
-  uint16_t port = static_cast<uint16_t>(std::stoi(addr.substr(static_cast<unsigned>(colon + 1))));
-  
+  uint16_t port = static_cast<uint16_t>(
+      std::stoi(addr.substr(static_cast<unsigned>(colon + 1))));
+
   AddrV6 ad(ip.c_str(), port);
   return ad;
 }
@@ -114,9 +116,7 @@ void Addr::swap(Addr &other) noexcept {
 Addr::Addr(const Addr &other) : Addr() {
   memcpy(_addr, other._addr, sizeof(sockaddr_storage));
 }
-Addr::Addr(Addr &&other) noexcept : _addr(nullptr) {
-  swap(other);
-}
+Addr::Addr(Addr &&other) noexcept : _addr(nullptr) { swap(other); }
 Addr &Addr::operator=(const Addr &other) {
   memcpy(_addr, other._addr, sizeof(sockaddr_storage));
   return *this;
