@@ -1,9 +1,8 @@
 //
 // Created by pandabo on 10/31/17.
 //
-#include <cstring>
 #include "buffer.h"
-
+#include <cstring>
 
 namespace bsnet {
 
@@ -48,6 +47,7 @@ void ringbuf_t::swap(ringbuf_t &other) noexcept {
 size_type ringbuf_t::retrieve(void *data, size_type size) {
   size_type bytes = std::min(size, readable_bytes());
   size_type part = std::min(bytes, _capacity - _begin);
+
   memcpy(data, _data + _begin, static_cast<size_t>(part));
   if (bytes > part) {
     memcpy(static_cast<byte_t *>(data) + part, _data,
@@ -64,6 +64,7 @@ size_type ringbuf_t::append(const void *data, size_type size) {
   size_type bytes = std::min(size, writable_bytes());
   size_type tail = (_begin + _size) % _capacity;
   size_type part = std::min(bytes, _capacity - tail);
+
   memcpy(_data + tail, data, static_cast<size_t>(part));
   if (bytes > part) {
     memcpy(_data, static_cast<const byte_t *>(data) + part,
@@ -74,19 +75,20 @@ size_type ringbuf_t::append(const void *data, size_type size) {
   return bytes;
 }
 
-ringbuf_t &ringbuf_t::expand() { return reserve(_capacity * 2); }
+ringbuf_t &ringbuf_t::expand() { return reserve(_capacity << 1); }
 
 ringbuf_t &ringbuf_t::reserve(size_type size) {
   if (size <= _capacity)
     return *this;
 
-  auto new_data = new byte_t[size];
+  byte_t *new_data = new byte_t[size];
 
   size_type part = std::min(_size, _capacity - _begin);
   memcpy(new_data, _data + _begin, static_cast<size_t>(part));
   if (_size > part) {
     memcpy(new_data + part, _data, static_cast<size_t>(_size - part));
   }
+
   _capacity = size;
   _begin = 0;
   delete[] _data;

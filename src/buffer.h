@@ -12,7 +12,7 @@ namespace bsnet {
 
 using byte_t = std::uint8_t;
 
-template<typename Buf> class Buffer;
+template <typename Buf> class Buffer;
 
 /**
  * A circular buffer, which is used in the Buffer class.
@@ -53,7 +53,7 @@ public:
   /**
    * Retrieve data from buffer.
    * @param data
-   * @param size Require size <= readable_bytes().
+                   * @param size Require size <= readable_bytes().
    * @return
    */
   size_type retrieve(void *data, size_type size);
@@ -137,7 +137,7 @@ void swap(ringbuf_t &lhs, ringbuf_t &rhs);
  *      + Buf& expand();
  *      + Buf& reserve(size_type size);
  */
-template<typename TBuf = ringbuf_t> class Buffer {
+template <typename TBuf = ringbuf_t> class Buffer {
 public:
   using size_type = typename TBuf::size_type;
   static const std::size_t DefaultInitSize = 1024;
@@ -215,7 +215,7 @@ private:
   TBuf _buf;
 };
 
-template<typename TBuf> void swap(Buffer<TBuf> &lhs, Buffer<TBuf> &rhs) {
+template <typename TBuf> void swap(Buffer<TBuf> &lhs, Buffer<TBuf> &rhs) {
   lhs.swap(rhs);
 }
 }
