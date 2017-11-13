@@ -1,5 +1,6 @@
 .idea/
 cmake-build-debug/
+experiments/
 _build/
 .dir-locals.el
 *.*~

@@ -5,13 +5,11 @@
 
 #pragma once
 #include <cstdint>
-#include <type_traits>
-
-#ifdef __linux__
-#include <sys/epoll.h>
-#endif
+#include <utility>
 
 namespace bsnet {
+
+using Token = uint32_t;
 
 /**
  * PollOpt class has 4 base enum value, and can be combined by
@@ -79,18 +77,23 @@ inline bool operator!=(PollOpt opt1, PollOpt opt2) {
  */
 class Ready {
   enum { Empty = 0, Read = 1, Write = 1 << 1, Error = 1 << 2, Hup = 1 << 3 };
-
 public:
+  friend class Poller;
+
   static Ready empty() { return {Empty}; }
   static Ready readable() { return {Read}; }
   static Ready writable() { return {Write}; }
-
+  static Ready error() { return {Error}; }
+  static Ready hup() { return {Hup}; }
+  
   explicit operator uint8_t() const { return _value; }
 
   bool contains(Ready r) const { return (_value & r._value) == r._value; }
   bool is_empty() const { return _value == 0; }
   bool is_readable() const { return contains(Read); }
   bool is_writable() const { return contains(Write); }
+  bool is_error() const { return contains(Error); }
+  bool is_hup() const { return contains(Hup); }
 
   friend bool operator==(Ready r1, Ready r2);
   friend bool operator!=(Ready r1, Ready r2);
@@ -127,5 +130,22 @@ inline Ready operator-(Ready r1, Ready r2) {
   r1 -= r2;
   return r1;
 }
+
+struct Event {
+  Token token;
+  Ready readiness;
+};
+
+class Poller;
+
+class Evented {
+public:
+  virtual int register_on(Poller &poller, Token tok, Ready interest, PollOpt opts) = 0;
+  virtual int reregister_on(Poller &poller, Token tok, Ready interest, PollOpt opts) = 0;
+  virtual int deregister_on(Poller &poller) = 0;
+  virtual int fd() const = 0;
+  virtual ~Evented() {}
+};
+
 
 }
