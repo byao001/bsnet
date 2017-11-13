@@ -9,7 +9,7 @@ include_directories(src)
 enable_testing()
 add_subdirectory(test)
 
-#add_test(AddrTest test/AddrTest)
+add_test(Test test/testbsnet)
 #add_test(BufferTest test/BufferTest)
 
 add_executable(demo main.cpp)
