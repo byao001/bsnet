@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "buffer.h"
+#include "buffer.hpp"
 
 namespace bsnet {
 

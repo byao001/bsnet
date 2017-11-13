@@ -41,7 +41,7 @@ include_directories("${source_dir}/googletest/include"
         "${source_dir}/googlemock/include")
 
 
-set(SRCS main.cpp test_addr.cpp test_buffer.cpp)
+set(SRCS main.cpp test_addr.cpp test_buffer.cpp test_event.cpp)
 add_executable(testbsnet ${SRCS})
 
 target_link_libraries(testbsnet
