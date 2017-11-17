@@ -1,6 +1,6 @@
 add_library(libbsnet
         address.cpp
-        address.h
+        address.hpp
         tcp_stream.hpp
         buffer.hpp
         buffer.cpp
@@ -8,4 +8,9 @@ add_library(libbsnet
         tcp_stream.cpp
         event.hpp
         blocking_queue.hpp
-        NonCopyable.hpp poller_poll.cpp poller_poll.hpp)
+        NonCopyable.hpp
+        poller_poll.cpp
+        poller_poll.hpp
+        poller.hpp
+        poller_epoll.hpp
+        poller_epoll.cpp)

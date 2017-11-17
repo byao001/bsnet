@@ -4,6 +4,7 @@
 //
 #include "buffer.hpp"
 #include <cstring>
+#include <sys/uio.h>
 
 namespace bsnet {
 
@@ -96,5 +97,42 @@ ringbuf_t &ringbuf_t::reserve(size_type size) {
   _data = new_data;
 
   return *this;
+}
+
+size_type ringbuf_t::read_fd(int fd, int *saved_errno) {
+  char extrabuf[65536];
+  struct iovec vec[3];
+  int last = 1;
+  if (_begin + _size < _capacity) {
+    vec[0].iov_base = _data + _begin + _size;
+    vec[0].iov_len = _capacity - _size - _begin;
+    vec[1].iov_base = _data;
+    vec[1].iov_len = _begin;
+    last = 2;
+  } else {
+    int tail = (_begin + _size) % _capacity;
+    vec[0].iov_base = _data + tail;
+    vec[0].iov_len = _begin - tail;
+  }
+  vec[last].iov_base = extrabuf;
+  vec[last].iov_len = sizeof(extrabuf);
+
+  int r = ::readv(fd, vec, last + 1);
+  const size_type w = writable_bytes();
+  if (r < 0) {
+    *saved_errno = r;
+  } else if (static_cast<std::size_t>(r) <= w) {
+    this->write(r);
+  } else {
+    this->write(w);
+    int new_size = r - w > _capacity ? r - w + _capacity : _capacity << 1;
+    reserve(new_size);
+    append(extrabuf, r - w);
+  }
+
+  if (static_cast<std::size_t>(r) == w + sizeof(extrabuf)) {
+    r += read_fd(fd, saved_errno);
+  }
+  return r;
 }
 }

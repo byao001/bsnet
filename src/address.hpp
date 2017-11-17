@@ -15,8 +15,7 @@
 
 namespace bsnet {
 
-class invalid_address : public std::runtime_error {
-public:
+struct invalid_address : std::runtime_error {
   explicit invalid_address(const std::string &);
 };
 
@@ -26,6 +25,9 @@ class Addr;
 
 class Addr {
 public:
+  friend class TcpStream;
+  friend class TcpListener;
+
   Addr();
   ~Addr();
   Addr(const Addr &);

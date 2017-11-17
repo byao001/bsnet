@@ -8,6 +8,7 @@
 #pragma once
 
 #include "event.hpp"
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <functional>
@@ -54,12 +55,14 @@ public:
 
   int deregister_event(Evented &ev) { return deregister_fd(ev.fd()); }
 
-  template<typename Rep, typename Period>
+  template <typename Rep, typename Period>
   int poll(Events &events,
            std::chrono::duration<Rep, Period> *timeout = nullptr) {
     int tm = -1;
     if (timeout) {
-      tm = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(*timeout).count());
+      tm = static_cast<int>(
+          std::chrono::duration_cast<std::chrono::milliseconds>(*timeout)
+              .count());
     }
     int num_events = ::poll(_fds.data(), static_cast<int>(_fds.size()), tm);
     if (num_events == 0)
@@ -67,19 +70,19 @@ public:
     for (auto it = _fds.cbegin(); it != _fds.cend() && num_events > 0; ++it) {
       if (it->revents > 0) {
         // create Ready for event.
-        Ready rediness = Ready::empty();
+        Ready readiness = Ready::empty();
         if (it->revents & (POLLERR | POLLNVAL))
-          rediness |= Ready::error();
+          readiness |= Ready::error();
         if (it->revents & (POLLIN | POLLPRI | POLLHUP))
-          rediness |= Ready::readable();
+          readiness |= Ready::readable();
         if (it->revents & POLLOUT)
-          rediness |= Ready::writable();
+          readiness |= Ready::writable();
 
         // find token of the event
         auto tok_it = _tok_map.find(it->fd);
         assert(tok_it != _tok_map.end());
         Token tok = tok_it->second;
-        events.push_back({tok, rediness});
+        events.emplace_back(readiness, tok);
 
         num_events -= 1;
       }
@@ -94,8 +97,8 @@ public:
 
 private:
   int register_fd(int fd, short event, Token tok, bool clear = false) {
-    struct pollfd pfd{
-        fd, event
+    struct pollfd pfd {
+      fd, event
     };
     _fds.push_back(pfd);
     _tok_map[fd] = tok;

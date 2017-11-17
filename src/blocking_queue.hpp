@@ -19,7 +19,7 @@ namespace bsnet {
  * A blocking queue with unlimited size.
  * @tparam T
  */
-template<typename T> class blocking_queue_t : public NonCopyable {
+template <typename T> class blocking_queue_t : public NonCopyable {
 public:
   void get(T &t) {
     std::unique_lock<std::mutex> lk(_mtx);
@@ -52,7 +52,7 @@ public:
     _no_empty.notify_one();
   }
 
-  template<typename... Args> void emplace(Args &&... args) {
+  template <typename... Args> void emplace(Args &&... args) {
     std::unique_lock<std::mutex> lk(_mtx);
     _queue.emplace_back(std::forward<Args>(args)...);
     _no_empty.notify_one();
@@ -84,7 +84,7 @@ private:
  * A blocking queue with fixed size.
  * @tparam T
  */
-template<typename T> class bounded_blocking_queue_t : NonCopyable {
+template <typename T> class bounded_blocking_queue_t : NonCopyable {
 public:
   explicit bounded_blocking_queue_t(std::size_t s) : _max_size(s) {}
 
@@ -140,7 +140,7 @@ public:
     return vec.size() - n;
   }
 
-  template<typename... Args> void emplace(Args &&... args) {
+  template <typename... Args> void emplace(Args &&... args) {
     std::unique_lock<std::mutex> lk(_mtx);
     while (_queue.size() >= _max_size)
       _no_full.wait(lk);

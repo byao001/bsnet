@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cstdint>
 #include <string>
+#include <typeinfo>
 
 namespace bsnet {
 
@@ -25,6 +26,9 @@ template <typename Buf> class Buffer;
 class ringbuf_t {
 public:
   using size_type = int;
+  using self_type = ringbuf_t;
+
+  friend class Buffer<self_type>;
 
   explicit ringbuf_t(size_type cap);
   ~ringbuf_t();
@@ -88,7 +92,11 @@ public:
    */
   ringbuf_t &reserve(size_type size);
 
-  friend class Buffer<ringbuf_t>;
+  /**
+   * Read data from an Fd, use scatter/gather IO
+   * @param fd
+   */
+  size_type read_fd(int fd, int *saved_errno);
 
 private:
   /*
@@ -96,13 +104,17 @@ private:
    */
   void read(size_type size) {
     _begin = (_begin + size) % _capacity;
+    assert(_size >= size);
     _size -= size;
   }
 
   /*
    * Update the size, after append data of 'size'
    */
-  void write(size_type size) { _size += size; }
+  void write(size_type size) {
+    assert(_size + size <= _capacity);
+    _size += size;
+  }
 
   byte_t *_data;
   size_type _capacity;
@@ -141,7 +153,7 @@ void swap(ringbuf_t &lhs, ringbuf_t &rhs);
 template <typename TBuf = ringbuf_t> class Buffer {
 public:
   using size_type = typename TBuf::size_type;
-  static const std::size_t DefaultInitSize = 1024;
+  static constexpr std::size_t DefaultInitSize = 1024;
 
   explicit Buffer(int len = DefaultInitSize) : _buf(len) {}
   // implicitly generated copy and move ctor, and dtor
@@ -198,7 +210,7 @@ public:
    * @param data
    * @param size
    */
-  const void append(const void *data, size_type size) {
+  void append(const void *data, size_type size) {
     if (size > _buf.writable_bytes()) {
       if (_buf.expand().writable_bytes() < size)
         _buf.reserve(_buf.size() + size);
@@ -210,7 +222,11 @@ public:
    * Append a string as bytes to the inner buffer.
    * @param str
    */
-  const void append(const std::string &str) { append(str.c_str(), str.size()); }
+  void append(const std::string &str) { append(str.c_str(), str.size()); }
+
+  size_type read_fd(int fd, int *saved_err) {
+    return _buf.read_fd(fd, saved_err);
+  }
 
 private:
   TBuf _buf;

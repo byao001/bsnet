@@ -2,8 +2,8 @@
 // Created by byao on 10/31/17.
 // Copyright (c) 2017 byao. All rights reserved.
 //
-#include "buffer.hpp"
-#include "gtest/gtest.h"
+#include "../src/buffer.hpp"
+#include <gtest/gtest.h>
 #include <queue>
 #include <random>
 using namespace std;
