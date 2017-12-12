@@ -41,13 +41,34 @@ include_directories("${source_dir}/googletest/include"
         "${source_dir}/googlemock/include")
 
 
-set(SRCS main.cpp test_addr.cpp test_buffer.cpp test_event.cpp)
-add_executable(testbsnet ${SRCS})
-
-target_link_libraries(testbsnet
+add_executable(testaddr test_addr.cpp main.cpp)
+target_link_libraries(testaddr
         libbsnet
         libgtest
         libgmock
         )
+install(TARGETS testaddr DESTINATION bin)
 
-install(TARGETS testbsnet DESTINATION bin)
+add_executable(testbuffer test_buffer.cpp main.cpp)
+target_link_libraries(testbuffer
+        libbsnet
+        libgtest
+        libgmock
+        )
+install(TARGETS testbuffer DESTINATION bin)
+
+add_executable(testevent test_event.cpp main.cpp)
+target_link_libraries(testevent
+        libbsnet
+        libgtest
+        libgmock
+        )
+install(TARGETS testevent DESTINATION bin)
+
+add_executable(testtcp test_tcp.cpp ../src/bytebuffer.cpp ../src/tcp_stream.cpp main.cpp)
+target_link_libraries(testtcp
+        libbsnet
+        libgtest
+        libgmock
+        )
+install(TARGETS testtcp DESTINATION bin)

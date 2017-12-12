@@ -3,9 +3,8 @@
 // Copyright (c) 2017 byao. All rights reserved.
 //
 
-// #ifndef BSNET_POLL_HPP
-// #define BSNET_POLL_HPP
-#pragma once
+#ifndef BSNET_POLLER_POLL_HPP
+#define BSNET_POLLER_POLL_HPP
 
 #include "event.hpp"
 #include <algorithm>
@@ -163,6 +162,6 @@ public:
 private:
   int _fd;
 };
-}
+} // namespace bsnet
 
-// #endif //BSNET_POLL_HPP
+#endif // BSNET_POLLER_POLL_HPP

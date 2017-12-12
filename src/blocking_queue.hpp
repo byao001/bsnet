@@ -3,9 +3,11 @@
 // Copyright (c) 2017 byao. All rights reserved.
 //
 
-#pragma once
+#ifndef BSNET_BLOCKING_QUEUE_HPP
+#define BSNET_BLOCKING_QUEUE_HPP
 
 #include "NonCopyable.hpp"
+#include <algorithm>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -171,3 +173,5 @@ private:
   std::size_t _max_size;
 };
 }
+
+#endif // !BSNET_BLOCKING_QUEUE_HPP

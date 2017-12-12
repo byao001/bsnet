@@ -1,4 +1,5 @@
 #include "poller_epoll.hpp"
+#include "neterr.hpp"
 #include <stdexcept>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -8,8 +9,8 @@ using namespace std;
 
 namespace bsnet {
 
-Epoller Epoller::new_instance() {
-  Epoller epoller;
+Epoller *Epoller::new_instance() {
+  Epoller *epoller = new Epoller();
   return epoller;
 }
 
@@ -29,19 +30,19 @@ Epoller::~Epoller() {
   }
 }
 
-int Epoller::register_evt(Evented &ev, Token tok, Ready interest,
-                          PollOpt opts) {
-  return ev.register_on(*this, tok, interest, opts);
+void Epoller::register_evt(Evented &ev, Token tok, Ready interest,
+                           PollOpt opts) {
+  ev.register_on(*this, tok, interest, opts);
 }
 
-int Epoller::reregister_evt(Evented &ev, Token tok, Ready interest,
-                            PollOpt opts) {
-  return ev.reregister_on(*this, tok, interest, opts);
+void Epoller::reregister_evt(Evented &ev, Token tok, Ready interest,
+                             PollOpt opts) {
+  ev.reregister_on(*this, tok, interest, opts);
 }
 
-int Epoller::deregister_evt(Evented &ev) { return ev.deregister_on(*this); }
+void Epoller::deregister_evt(Evented &ev) { ev.deregister_on(*this); }
 
-int Epoller::poll(vector<Event> &events, Duration *timeout) {
+int Epoller::poll(vector<Event> &events, const Duration *timeout) {
   static_assert(sizeof(Event) == sizeof(epoll_event),
                 "Event and epoll_event not match");
   int tm = timeout ? static_cast<int>(timeout->count()) : -1;

@@ -9,8 +9,10 @@ include_directories(src)
 enable_testing()
 add_subdirectory(test)
 
-add_test(Test test/testbsnet)
-#add_test(BufferTest test/BufferTest)
+add_test(AddrTest test/testaddr)
+add_test(BufferTest test/testbuffer)
+add_test(EventTest test/testevent)
+add_test(TcpTest test/testtcp)
 
 add_executable(demo main.cpp)
 target_link_libraries(demo libbsnet)

@@ -1,23 +1,14 @@
-#pragma once
+#ifndef BSNET_POLLER_EPOLL_HPP
+#define BSNET_POLLER_EPOLL_HPP
 
-#include "NonCopyable.hpp"
 #include "poller.hpp"
+#include "utility.hpp"
 #include <chrono>
 #include <cstring>
 #include <stdexcept>
 #include <vector>
 
 namespace bsnet {
-
-class create_epoll_failed : public std::runtime_error {
-public:
-  create_epoll_failed() : std::runtime_error(strerror(errno)) {}
-};
-
-class epoll_wait_failed : public std::runtime_error {
-public:
-  epoll_wait_failed() : std::runtime_error(strerror(errno)) {}
-};
 
 class Epoller : public Poller {
 public:
@@ -26,18 +17,25 @@ public:
   friend class TcpListener;
   friend class EventedFd;
 
-  static Epoller new_instance();
+  static Epoller *new_instance();
   Epoller();
   Epoller(Epoller &&) noexcept;
-  ~Epoller();
+  ~Epoller() override;
 
-  int register_evt(Evented &ev, Token tok, Ready interest, PollOpt opts);
-  int reregister_evt(Evented &ev, Token tok, Ready interest, PollOpt opts);
-  int deregister_evt(Evented &ev);
+  void register_evt(Evented &ev, Token tok, Ready interest,
+                    PollOpt opts) override;
+  void reregister_evt(Evented &ev, Token tok, Ready interest,
+                      PollOpt opts) override;
+  void deregister_evt(Evented &ev) override;
 
-  int poll(std::vector<Event> &events, Duration *timeout = nullptr);
+  int poll(std::vector<Event> &events,
+           const Duration *timeout = nullptr) override;
 
 private:
+  int fd() const override { return _epfd; }
+
   int _epfd;
 };
 }
+
+#endif // !BSNET_POLLER_EPOLL_HPP

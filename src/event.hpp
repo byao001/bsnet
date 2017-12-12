@@ -3,7 +3,9 @@
 // Copyright (c) 2017 byao. All rights reserved.
 //
 
-#pragma once
+#ifndef BSNET_EVENT_HPP
+#define BSNET_EVENT_HPP
+
 #include <cstdint>
 #include <sys/epoll.h>
 #include <utility>
@@ -142,6 +144,7 @@ inline Ready operator-(Ready r1, Ready r2) {
 
 class Event {
 public:
+  Event() = default;
   Event(Ready rd, Token tok) {
     _ev.events = static_cast<std::uint32_t>(rd);
     _ev.data.u64 = tok;
@@ -158,12 +161,14 @@ class Poller;
 
 class Evented {
 public:
-  virtual int register_on(Poller &poller, Token tok, Ready interest,
-                          PollOpt opts) = 0;
-  virtual int reregister_on(Poller &poller, Token tok, Ready interest,
-                            PollOpt opts) = 0;
-  virtual int deregister_on(Poller &poller) = 0;
+  virtual void register_on(Poller &poller, Token tok, Ready interest,
+                           PollOpt opts) = 0;
+  virtual void reregister_on(Poller &poller, Token tok, Ready interest,
+                             PollOpt opts) = 0;
+  virtual void deregister_on(Poller &poller) = 0;
   virtual int fd() const = 0;
-  virtual ~Evented() {}
+  virtual ~Evented() noexcept {}
 };
-}
+} // namespace bsnet
+
+#endif // !BSNET_EVENT_HPP

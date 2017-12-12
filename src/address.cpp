@@ -2,7 +2,9 @@
 // Created by byao on 9/23/16.
 // Copyright (c) 2017 byao. All rights reserved.
 //
-#include "address.h"
+#include "address.hpp"
+#include "neterr.hpp"
+#include "utility.hpp"
 #include <arpa/inet.h>
 #include <cstdint>
 #include <cstring>
@@ -18,12 +20,11 @@ invalid_address::invalid_address(const std::string &s) : runtime_error(s) {}
  *    not specify ip address, use wildcard defaultly.
  */
 AddrV4::AddrV4(in_port_t port) {
-  auto addr = reinterpret_cast<struct sockaddr_in *>(_addr);
-  memset(addr, 0, sizeof(*_addr));
-  addr->sin_family = AF_INET;
-  addr->sin_addr.s_addr =
-      static_cast<decltype(addr->sin_addr.s_addr)>(INADDR_ANY);
-  addr->sin_port = htons(port);
+  memset(&_addr, 0, sizeof(_addr));
+  _addr.sin_family = AF_INET;
+  _addr.sin_addr.s_addr =
+      static_cast<decltype(_addr.sin_addr.s_addr)>(INADDR_ANY);
+  _addr.sin_port = htons(port);
 }
 
 /*
@@ -31,11 +32,10 @@ AddrV4::AddrV4(in_port_t port) {
  *    specifying ip address and port.
  */
 AddrV4::AddrV4(const char *host, in_port_t port) {
-  auto addr = reinterpret_cast<struct sockaddr_in *>(_addr);
-  memset(addr, 0, sizeof(*_addr));
-  addr->sin_family = AF_INET;
-  ::inet_pton(AF_INET, host, &addr->sin_addr);
-  addr->sin_port = htons(port);
+  memset(&_addr, 0, sizeof(_addr));
+  _addr.sin_family = AF_INET;
+  ::inet_pton(AF_INET, host, &_addr.sin_addr);
+  _addr.sin_port = htons(port);
 }
 
 /*
@@ -55,11 +55,10 @@ AddrV4 AddrV4::from(const std::string &addr) {
  *    not specify ip address, use wildcard defaultly.
  */
 AddrV6::AddrV6(in_port_t port) {
-  auto addr = reinterpret_cast<struct sockaddr_in6 *>(_addr);
-  memset(addr, 0, sizeof(*_addr));
-  addr->sin6_family = AF_INET6;
-  addr->sin6_addr = in6addr_any;
-  addr->sin6_port = htons(port);
+  memset(&_addr, 0, sizeof(_addr));
+  _addr.sin6_family = AF_INET6;
+  _addr.sin6_addr = in6addr_any;
+  _addr.sin6_port = htons(port);
 }
 
 /*
@@ -67,11 +66,10 @@ AddrV6::AddrV6(in_port_t port) {
  *    specifying ip address and port.
  */
 AddrV6::AddrV6(const char *host, uint16_t port) {
-  auto addr = reinterpret_cast<struct sockaddr_in6 *>(_addr);
-  memset(addr, 0, sizeof(*_addr));
-  addr->sin6_family = AF_INET6;
-  inet_pton(AF_INET6, host, &addr->sin6_addr);
-  addr->sin6_port = htons(port);
+  memset(&_addr, 0, sizeof(_addr));
+  _addr.sin6_family = AF_INET6;
+  inet_pton(AF_INET6, host, &_addr.sin6_addr);
+  _addr.sin6_port = htons(port);
 }
 
 AddrV6 AddrV6::from(const std::string &addr) {
@@ -102,49 +100,70 @@ AddrV6 AddrV6::from(const std::string &addr) {
   return ad;
 }
 
-Addr::Addr() : _addr(new struct sockaddr_storage) {}
+/**
+ * Addr
+ */
+Addr::Addr() : _v(Version::UnSpec), _addr(new _Addr) {}
 Addr::~Addr() { delete _addr; }
 
-void Addr::swap(Addr &other) noexcept {
-  using std::swap;
-  swap(_addr, other._addr);
+Addr::Addr(const Addr &other) : _v(other._v), _addr(new _Addr) {
+  _v = other._v;
+  memcpy(_addr, other._addr, sizeof(_Addr));
 }
-
-/*
- * Construct from other Addr
- */
-Addr::Addr(const Addr &other) : Addr() {
-  memcpy(_addr, other._addr, sizeof(sockaddr_storage));
-}
-Addr::Addr(Addr &&other) noexcept : _addr(nullptr) { swap(other); }
 Addr &Addr::operator=(const Addr &other) {
-  memcpy(_addr, other._addr, sizeof(sockaddr_storage));
+  _v = other._v;
+  memcpy(_addr, other._addr, sizeof(_Addr));
   return *this;
 }
+Addr::Addr(Addr &&other) noexcept : _v(), _addr(nullptr) { swap(other); }
 Addr &Addr::operator=(Addr &&other) noexcept {
   swap(other);
   return *this;
 }
 
-/*
- * Convert to V4 and V6
- */
-const AddrV4 &Addr::as_ipv4() const {
-  if (_addr->ss_family != AF_INET) {
-    throw invalid_address("not ipv4");
-  }
-  auto v4 = (const AddrV4 *)this;
-  return *v4;
+Addr::Addr(const AddrV4 &other) : _v(Version::V4), _addr(new _Addr) {
+  memcpy(&(_addr->v4._addr), &other._addr, sizeof(struct sockaddr_in));
+}
+Addr::Addr(const AddrV6 &other) : _v(Version::V6), _addr(new _Addr) {
+  memcpy(&(_addr->v6._addr), &other._addr, sizeof(struct sockaddr_in6));
+}
+Addr &Addr::operator=(const AddrV4 &other) {
+  _v = Version::V4;
+  memcpy(&(_addr->v4._addr), &other._addr, sizeof(struct sockaddr_in));
+  return *this;
+}
+Addr &Addr::operator=(const AddrV6 &other) {
+  _v = Version::V6;
+  memcpy(&(_addr->v6._addr), &other._addr, sizeof(struct sockaddr_in6));
+  return *this;
 }
 
-const AddrV6 &Addr::as_ipv6() const {
-  if (_addr->ss_family != AF_INET6) {
-    throw invalid_address("not ipv6");
-  }
-  auto v6 = (const AddrV6 *)this;
-  return *v6;
+void Addr::swap(Addr &other) noexcept {
+  using std::swap;
+  _v = other._v;
+  swap(_addr, other._addr);
 }
-bool Addr::is_ipv4() const { return _addr->ss_family == AF_INET; }
-bool Addr::is_ipv6() const { return _addr->ss_family == AF_INET6; }
-const struct sockaddr_storage *Addr::get_sockaddr() const { return _addr; }
+
+size_t Addr::size() const {
+  return pick([&](auto &_) { return _.size(); });
 }
+
+const AddrV4 *Addr::as_ipv4() const {
+  if (is_ipv4())
+    return &_addr->v4;
+  return nullptr;
+}
+const AddrV6 *Addr::as_ipv6() const {
+  if (is_ipv6())
+    return &_addr->v6;
+  return nullptr;
+}
+
+const struct sockaddr *Addr::get_sockaddr() const {
+  return pick([&](auto &_) { return _.get_sockaddr(); });
+}
+struct sockaddr *Addr::get_sockaddr() {
+  return pick([&](auto &_) { return _.get_sockaddr(); });
+}
+
+} // namespace bsnet

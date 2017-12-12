@@ -5,9 +5,10 @@
 // Copyright (c) 2017 byao. All rights reserved.
 //
 
-#ifndef NETWORK_ADDRESS_H
-#define NETWORK_ADDRESS_H
+#ifndef BSNET_ADDRESS_HPP
+#define BSNET_ADDRESS_HPP
 
+#include "utility.hpp"
 #include <netdb.h>
 #include <stdexcept>
 #include <string>
@@ -15,13 +16,56 @@
 
 namespace bsnet {
 
-struct invalid_address : std::runtime_error {
-  explicit invalid_address(const std::string &);
-};
-
 class AddrV4;
 class AddrV6;
 class Addr;
+
+class AddrV4 final {
+public:
+  friend class Addr;
+
+  AddrV4() = default;
+  explicit AddrV4(in_port_t port);
+  explicit AddrV4(const char *host, in_port_t port);
+
+  constexpr bool is_ipv4() const { return true; }
+  constexpr bool is_ipv6() const { return false; }
+  constexpr std::size_t size() const { return sizeof(struct sockaddr_in); }
+  const struct sockaddr *get_sockaddr() const {
+    return reinterpret_cast<const struct sockaddr *>(&_addr);
+  }
+  struct sockaddr *get_sockaddr() {
+    return reinterpret_cast<struct sockaddr *>(&_addr);
+  }
+
+  static AddrV4 from(const std::string &addr);
+
+private:
+  struct sockaddr_in _addr;
+};
+
+class AddrV6 final {
+public:
+  friend class Addr;
+  AddrV6() = default;
+  explicit AddrV6(in_port_t port);
+  explicit AddrV6(const char *host, in_port_t port);
+
+  constexpr bool is_ipv4() const { return false; }
+  constexpr bool is_ipv6() const { return true; }
+  constexpr std::size_t size() const { return sizeof(struct sockaddr_in6); }
+  const struct sockaddr *get_sockaddr() const {
+    return reinterpret_cast<const struct sockaddr *>(&_addr);
+  }
+  struct sockaddr *get_sockaddr() {
+    return reinterpret_cast<struct sockaddr *>(&_addr);
+  }
+
+  static AddrV6 from(const std::string &addr);
+
+private:
+  struct sockaddr_in6 _addr;
+};
 
 class Addr {
 public:
@@ -35,37 +79,42 @@ public:
   Addr &operator=(const Addr &);
   Addr &operator=(Addr &&) noexcept;
 
+  Addr(const AddrV4 &);
+  Addr(const AddrV6 &);
+  Addr &operator=(const AddrV4 &);
+  Addr &operator=(const AddrV6 &);
+
   void swap(Addr &other) noexcept;
 
-  bool is_ipv4() const;
-  bool is_ipv6() const;
-  const AddrV4 &as_ipv4() const;
-  const AddrV6 &as_ipv6() const;
-  const sockaddr_storage *get_sockaddr() const;
+  bool is_ipv4() const { return _v == Version::V4; }
+  bool is_ipv6() const { return _v == Version::V6; }
+  std::size_t size() const;
 
-protected:
-  sockaddr_storage *_addr;
+  const AddrV4 *as_ipv4() const;
+  const AddrV6 *as_ipv6() const;
+  const struct sockaddr *get_sockaddr() const;
+  struct sockaddr *get_sockaddr();
+
+  enum struct Version : sa_family_t {
+    V4 = AF_INET,
+    V6 = AF_INET6,
+    UnSpec = AF_UNSPEC,
+  };
+
+  typedef union {
+    AddrV4 v4;
+    AddrV6 v6;
+  } _Addr;
+
+private:
+  template <typename Func> auto pick(Func &&f) const {
+    return is_ipv4() ? f(_addr->v4) : f(_addr->v6);
+  }
+
+  Version _v;
+  _Addr *_addr;
 };
 
-class AddrV4 final : public Addr {
-public:
-  explicit AddrV4(in_port_t port);
-  explicit AddrV4(const char *host, in_port_t port);
+} // namespace bsnet
 
-  static AddrV4 from(const std::string &addr);
-
-  friend class Addr;
-};
-
-class AddrV6 final : public Addr {
-public:
-  explicit AddrV6(in_port_t port);
-  explicit AddrV6(const char *host, in_port_t port);
-
-  static AddrV6 from(const std::string &addr);
-
-  friend class Addr;
-};
-}
-
-#endif // NETWORK_ADDRESS_H
+#endif // BSNET_ADDRESS_HPP
