@@ -38,8 +38,8 @@ TcpListener TcpListener::bind(const Addr &addr, size_t listen_backlog) {
   return TcpListener(sock);
 }
 
-TcpListener::TcpListener(TcpListener &&other) noexcept : _acceptor(-1) {
-  _acceptor.swap(other._acceptor);
+TcpListener::TcpListener(TcpListener &&other) noexcept : EventedFd(-1) {
+  this->swap(other);
 }
 
 TcpStream TcpListener::accept(Addr *addr) {
@@ -50,7 +50,7 @@ TcpStream TcpListener::accept(Addr *addr) {
     ad = addr->get_sockaddr();
     socklenp = &socklen;
   }
-  CHECKED((sock = ::accept4(_acceptor.fd(), ad, socklenp, SOCK_NONBLOCK)) > 0 ||
+  CHECKED((sock = ::accept4(_fd, ad, socklenp, SOCK_NONBLOCK)) > 0 ||
               errno == EAGAIN || errno == EWOULDBLOCK,
           creating_acceptor_failed);
   if (socklenp) {
@@ -62,7 +62,6 @@ TcpStream TcpListener::accept(Addr *addr) {
 
 void TcpListener::local_addr(Addr &addr) {
   socklen_t socklen;
-  CHECKED_TCPOP(::getsockname(_acceptor.fd(), addr.get_sockaddr(), &socklen) !=
-                -1);
+  CHECKED_TCPOP(::getsockname(_fd, addr.get_sockaddr(), &socklen) != -1);
 }
 }

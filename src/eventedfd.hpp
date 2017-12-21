@@ -23,12 +23,12 @@ public:
 
   void deregister_on(Poller &poller) override;
 
-  int fd() const override { return _fd; }
+  int fd() const { return _fd; }
   ~EventedFd() noexcept override;
 
   void swap(EventedFd &other) noexcept;
 
-private:
+protected:
   int _fd;
 };
 

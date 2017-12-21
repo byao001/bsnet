@@ -65,10 +65,17 @@ target_link_libraries(testevent
         )
 install(TARGETS testevent DESTINATION bin)
 
-add_executable(testtcp test_tcp.cpp ../src/bytebuffer.cpp ../src/tcp_stream.cpp main.cpp)
+add_executable(testtcp test_tcp.cpp main.cpp)
 target_link_libraries(testtcp
         libbsnet
         libgtest
         libgmock
         )
 install(TARGETS testtcp DESTINATION bin)
+
+add_executable(testregistration test_registration.cpp main.cpp)
+target_link_libraries(testregistration
+libbsnet
+libgtest
+libgmock)
+install(TARGETS testregistration DESTINATION bin)

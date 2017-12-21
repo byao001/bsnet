@@ -47,6 +47,21 @@ public:
   NonCopyable &operator=(const NonCopyable &) = delete;
 };
 
+template <typename Resource> struct Guard : public NonCopyable {
+  Guard(Resource *ptr) : _ptr(ptr) {}
+  Guard(Guard &&other) : _ptr(nullptr) {
+    using std::swap;
+    swap(_ptr, other._ptr);
+  }
+  ~Guard() { delete _ptr; }
+
+  operator Resource *() { return _ptr; }
+  Resource *operator->() { return _ptr; }
+
+private:
+  Resource *_ptr;
+};
+
 } // namespace bsnet
 
 #endif // BSNET_UTILITY_HPP

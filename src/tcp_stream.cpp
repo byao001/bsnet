@@ -104,74 +104,68 @@ TcpStream TcpStream::connect(const std::string &host,
   return connect(host.c_str(), service.c_str());
 }
 
-TcpStream::TcpStream(TcpStream &&other) noexcept : _sock(-1) {
-  _sock.swap(other._sock);
+TcpStream::TcpStream(TcpStream &&other) noexcept : EventedFd(-1) {
+  this->swap(other);
 }
 
 void TcpStream::peer_addr(Addr &addr) {
   socklen_t socklen;
-  CHECKED_TCPOP(::getpeername(_sock.fd(), addr.get_sockaddr(), &socklen) != -1);
+  CHECKED_TCPOP(::getpeername(_fd, addr.get_sockaddr(), &socklen) != -1);
 }
 
 void TcpStream::local_addr(Addr &addr) {
   socklen_t socklen;
-  CHECKED_TCPOP(::getsockname(_sock.fd(), addr.get_sockaddr(), &socklen) != -1);
+  CHECKED_TCPOP(::getsockname(_fd, addr.get_sockaddr(), &socklen) != -1);
 }
 
 void TcpStream::shutdown(Shutdown s) {
-  CHECKED_TCPOP(::shutdown(_sock.fd(), static_cast<int>(s)) != -1);
+  CHECKED_TCPOP(::shutdown(_fd, static_cast<int>(s)) != -1);
 }
 
 void TcpStream::set_nodelay(bool on) {
   int optval = on ? 1 : 0;
-  CHECKED_TCPOP(::setsockopt(_sock.fd(), IPPROTO_TCP, TCP_NODELAY, &optval,
+  CHECKED_TCPOP(::setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &optval,
                              sizeof(optval)) != -1);
 }
 
 bool TcpStream::nodelay() const {
   int on;
   socklen_t size;
-  CHECKED_TCPOP(
-      ::getsockopt(_sock.fd(), IPPROTO_TCP, TCP_NODELAY, &on, &size) != -1);
+  CHECKED_TCPOP(::getsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &on, &size) != -1);
   return on == 1;
 }
 
 void TcpStream::set_keepalive(bool on, int idle, int interval, int maxpkt) {
   int ion = on ? 1 : 0;
-  CHECKED_TCPOP(::setsockopt(_sock.fd(), SOL_SOCKET, SO_KEEPALIVE, &ion,
-                             sizeof(ion)) != -1);
-  CHECKED_TCPOP(::setsockopt(_sock.fd(), IPPROTO_TCP, TCP_KEEPIDLE, &idle,
-                             sizeof(idle)) != -1)
-  CHECKED_TCPOP(::setsockopt(_sock.fd(), IPPROTO_TCP, TCP_KEEPINTVL, &interval,
+  CHECKED_TCPOP(
+      ::setsockopt(_fd, SOL_SOCKET, SO_KEEPALIVE, &ion, sizeof(ion)) != -1);
+  CHECKED_TCPOP(
+      ::setsockopt(_fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle)) != -1)
+  CHECKED_TCPOP(::setsockopt(_fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval,
                              sizeof(interval)) != -1);
-  CHECKED_TCPOP(::setsockopt(_sock.fd(), IPPROTO_TCP, TCP_KEEPCNT, &maxpkt,
+  CHECKED_TCPOP(::setsockopt(_fd, IPPROTO_TCP, TCP_KEEPCNT, &maxpkt,
                              sizeof(maxpkt)) != -1);
 }
 
 bool TcpStream::keepalive(int &idle, int &interval, int &maxpkt) const {
   int on;
   socklen_t size;
-  CHECKED_TCPOP(
-      ::getsockopt(_sock.fd(), SOL_SOCKET, SO_KEEPALIVE, &on, &size) != -1);
+  CHECKED_TCPOP(::getsockopt(_fd, SOL_SOCKET, SO_KEEPALIVE, &on, &size) != -1);
   if (on == 0)
     return false;
 
   // keepalive is enabled
+  CHECKED_TCPOP(::getsockopt(_fd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, &size) !=
+                -1);
   CHECKED_TCPOP(
-      ::getsockopt(_sock.fd(), IPPROTO_TCP, TCP_KEEPIDLE, &idle, &size) != -1);
-  CHECKED_TCPOP(::getsockopt(_sock.fd(), IPPROTO_TCP, TCP_KEEPINTVL, &interval,
-                             &size) != -1);
-  CHECKED_TCPOP(
-      ::getsockopt(_sock.fd(), IPPROTO_TCP, TCP_KEEPCNT, &maxpkt, &size) != -1);
+      ::getsockopt(_fd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, &size) != -1);
+  CHECKED_TCPOP(::getsockopt(_fd, IPPROTO_TCP, TCP_KEEPCNT, &maxpkt, &size) !=
+                -1);
   return true;
 }
 
-ssize_t TcpStream::read(TcpStream::Buf &buf) {
-  return buf.read_from(_sock.fd());
-}
+ssize_t TcpStream::read(TcpStream::Buf &buf) { return buf.read_from(_fd); }
 
-ssize_t TcpStream::write(TcpStream::Buf &buf) {
-  return buf.write_to(_sock.fd());
-}
+ssize_t TcpStream::write(TcpStream::Buf &buf) { return buf.write_to(_fd); }
 
 } // namespace bsnet

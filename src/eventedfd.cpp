@@ -6,7 +6,7 @@
  */
 #include "eventedfd.hpp"
 #include "neterr.hpp"
-#include "poller.hpp"
+#include "poller_epoll.hpp"
 #include "utility.hpp"
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -15,7 +15,7 @@ namespace bsnet {
 
 void EventedFd::register_on(Poller &poller, Token tok, Ready interest,
                             PollOpt opts) {
-  Event evt(interest, tok);
+  Event evt(interest, opts, tok);
 #ifdef __linux__
   CHECKED(::epoll_ctl(poller.fd(), EPOLL_CTL_ADD, _fd,
                       reinterpret_cast<struct epoll_event *>(&evt)) == 0,
@@ -25,7 +25,7 @@ void EventedFd::register_on(Poller &poller, Token tok, Ready interest,
 
 void EventedFd::reregister_on(Poller &poller, Token tok, Ready interest,
                               PollOpt opts) {
-  Event evt(interest, tok);
+  Event evt(interest, opts, tok);
 #ifdef __linux__
   CHECKED(::epoll_ctl(poller.fd(), EPOLL_CTL_MOD, _fd,
                       reinterpret_cast<struct epoll_event *>(&evt)) == 0,

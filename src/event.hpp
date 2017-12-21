@@ -104,6 +104,7 @@ public:
   explicit operator uint32_t() const { return _value; }
 
   bool contains(Ready r) const { return (_value & r._value) == r._value; }
+  bool contains(uint32_t v) const { return (_value & v) == v; }
   bool is_empty() const { return _value == 0; }
   bool is_readable() const { return contains(Read); }
   bool is_writable() const { return contains(Write); }
@@ -145,12 +146,18 @@ inline Ready operator-(Ready r1, Ready r2) {
 class Event {
 public:
   Event() = default;
-  Event(Ready rd, Token tok) {
-    _ev.events = static_cast<std::uint32_t>(rd);
+  Event(Ready rd, PollOpt opt, Token tok) {
+    _ev.events =
+        static_cast<std::uint32_t>(rd) | static_cast<std::uint32_t>(opt);
     _ev.data.u64 = tok;
   }
 
-  Ready readiness() const { return Ready(_ev.events); }
+  void set_events(Ready rd, PollOpt opt) {
+    _ev.events =
+        static_cast<std::uint32_t>(rd) | static_cast<std::uint32_t>(opt);
+  }
+  void set_token(Token tok) { _ev.data.u64 = tok; }
+  Ready readiness() const { return Ready{_ev.events}; }
   Token token() const { return _ev.data.u64; }
 
 private:
@@ -166,7 +173,6 @@ public:
   virtual void reregister_on(Poller &poller, Token tok, Ready interest,
                              PollOpt opts) = 0;
   virtual void deregister_on(Poller &poller) = 0;
-  virtual int fd() const = 0;
   virtual ~Evented() noexcept {}
 };
 } // namespace bsnet

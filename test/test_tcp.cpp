@@ -27,9 +27,9 @@ struct TcpStreamTest : ::testing::Test {
   TcpStreamTest()
       : host("127.0.0.1"), service("8081"),
         server(TcpListener::bind(AddrV4::from(host + ":" + service), 128)),
-        poller(Epoller::new_instance()) {}
+        poller(Poller::new_instance()) {}
 
-  ~TcpStreamTest() override { delete poller; }
+  ~TcpStreamTest() override {}
 
   void SetUp() override {
     rbuf.clear();
@@ -65,7 +65,7 @@ struct TcpStreamTest : ::testing::Test {
   void TearDown() override {}
 
   string host, service;
-  Poller *poller;
+  Guard<Poller> poller;
   TcpListener server;
   Buffer rbuf;
   Buffer wbuf;
@@ -76,7 +76,7 @@ struct TcpStreamTest : ::testing::Test {
 TEST_F(TcpStreamTest, read_write) {
   using namespace std::chrono_literals;
 
-  auto client_poller = Epoller::new_instance();
+  auto client_poller = Poller::new_instance();
 
   string msg = "hello, world!";
   cwbuf.put_string(msg);
@@ -98,6 +98,4 @@ TEST_F(TcpStreamTest, read_write) {
   EXPECT_EQ(response, upper_str(msg));
 
   client_poller->deregister_evt(client);
-
-  delete client_poller;
 };

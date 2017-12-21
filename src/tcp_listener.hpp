@@ -16,7 +16,7 @@ namespace bsnet {
 class Addr;
 class TcpStream;
 
-class TcpListener : public Evented {
+class TcpListener : public EventedFd {
 public:
   static TcpListener bind(const Addr &addr, std::size_t listen_backlog);
 
@@ -24,30 +24,16 @@ public:
 
   ~TcpListener() noexcept override = default;
 
-  void swap(TcpListener &other) noexcept { _acceptor.swap(other._acceptor); }
+  void swap(TcpListener &other) noexcept {
+    using std::swap;
+    swap(_fd, other._fd);
+  }
 
   TcpStream accept(Addr *peer = nullptr);
   void local_addr(Addr &addr);
 
-  /**
-   * The following methods are from interface 'Evented'
-   */
-  void register_on(Poller &poller, Token tok, Ready interest,
-                   PollOpt opts) override {
-    _acceptor.register_on(poller, tok, interest, opts);
-  }
-  void reregister_on(Poller &poller, Token tok, Ready interest,
-                     PollOpt opts) override {
-    _acceptor.reregister_on(poller, tok, interest, opts);
-  }
-  void deregister_on(Poller &poller) override {
-    _acceptor.deregister_on(poller);
-  }
-  int fd() const override { return _acceptor.fd(); }
-
 private:
-  TcpListener(int sock) : _acceptor(sock) {}
-  EventedFd _acceptor;
+  TcpListener(int sock) : EventedFd(sock) {}
 };
 
 inline void swap(TcpListener &lhs, TcpListener &rhs) noexcept { lhs.swap(rhs); }

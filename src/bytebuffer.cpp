@@ -140,11 +140,11 @@ bool ByteBuffer::ends_with(const Byte *data, size_t len) const {
   return true;
 }
 
-bool ByteBuffer::ends_with(const char *prefix) const {
+bool ByteBuffer::ends_with(const char *postfix) const {
   int buf_len = _buf.readable_size();
-  int pre_len = ::strlen(prefix);
+  int pre_len = ::strlen(postfix);
   for (int i = 1; i <= pre_len; ++i) {
-    if (prefix[pre_len - i] != _buf[buf_len - i])
+    if (postfix[pre_len - i] != _buf[buf_len - i])
       return false;
   }
   return true;

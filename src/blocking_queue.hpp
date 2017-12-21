@@ -6,7 +6,7 @@
 #ifndef BSNET_BLOCKING_QUEUE_HPP
 #define BSNET_BLOCKING_QUEUE_HPP
 
-#include "NonCopyable.hpp"
+#include "utility.hpp"
 #include <algorithm>
 #include <chrono>
 #include <condition_variable>
@@ -101,18 +101,20 @@ public:
     _no_full.notify_one();
   }
 
-  void get_all(std::vector<T> &res) {
+  std::size_t get_all(std::vector<T> &res) {
     std::unique_lock<std::mutex> lk(_mtx);
 
     while (_queue.empty())
       _no_empty.wait(lk);
 
+    std::size_t n = _queue.end() - _queue.begin();
     std::copy(_queue.begin(), _queue.end(), std::back_inserter(res));
     _queue.clear();
     _no_full.notify_one();
+    return n;
   }
 
-  void put(T &t) {
+  void put(const T &t) {
     std::unique_lock<std::mutex> lk(_mtx);
     while (_queue.size() >= _max_size)
       _no_full.wait(lk);
@@ -130,7 +132,7 @@ public:
     _no_empty.notify_one();
   }
 
-  std::size_t put_all(std::vector<T> &vec) {
+  std::size_t put_all(const std::vector<T> &vec) {
     std::unique_lock<std::mutex> lk(_mtx);
 
     while (_queue.size() >= _max_size)
@@ -166,7 +168,7 @@ public:
   }
 
 private:
-  std::mutex _mtx;
+  mutable std::mutex _mtx;
   std::condition_variable _no_empty;
   std::condition_variable _no_full;
   std::deque<T> _queue;

@@ -25,7 +25,7 @@ class Addr;
  *   Test socket functionality[COMPLETED]
  *   add 'Evented' behavior.
  */
-class TcpStream : public Evented {
+class TcpStream : public EventedFd {
 public:
   friend class TcpListener;
   using Buf = ByteBuffer;
@@ -40,7 +40,10 @@ public:
   TcpStream(TcpStream &&other) noexcept;
   ~TcpStream() noexcept override = default;
 
-  void swap(TcpStream &other) noexcept { _sock.swap(other._sock); }
+  void swap(TcpStream &other) noexcept {
+    using std::swap;
+    swap(_fd, other._fd);
+  }
 
   /**
    * Folowing methods can throw 'tcp_error' exception
@@ -56,29 +59,13 @@ public:
   ssize_t read(Buf &buf);
   ssize_t write(Buf &buf);
 
-  /**
-   * The following methods are from interface 'Evented'
-   */
-  void register_on(Poller &poller, Token tok, Ready interest,
-                   PollOpt opts) override {
-    _sock.register_on(poller, tok, interest, opts);
-  }
-  void reregister_on(Poller &poller, Token tok, Ready interest,
-                     PollOpt opts) override {
-    _sock.reregister_on(poller, tok, interest, opts);
-  }
-  void deregister_on(Poller &poller) override { _sock.deregister_on(poller); }
-  int fd() const override { return _sock.fd(); }
-
 private:
-  TcpStream(int fd) : _sock(fd) {}
+  TcpStream(int fd) : EventedFd(fd) {}
   TcpStream(const TcpStream &) = delete;
   TcpStream &operator=(const TcpStream &) = delete;
 
   static void connect_nob(int sock, const struct sockaddr *addr, socklen_t len,
                           int timeout);
-
-  EventedFd _sock;
 };
 
 inline void swap(TcpStream &lhs, TcpStream &rhs) noexcept { lhs.swap(rhs); }

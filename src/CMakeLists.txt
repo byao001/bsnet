@@ -12,11 +12,10 @@ add_library(libbsnet
         tcp_listener.cpp
         event.hpp
         blocking_queue.hpp
-        #poller_poll.cpp
-        #poller_poll.hpp
-        poller.hpp
         poller_epoll.hpp
         poller_epoll.cpp
         utility.hpp
         neterr.hpp
-        neterr.cpp)
+        neterr.cpp
+        registration.hpp
+        registration.cpp)
