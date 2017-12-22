@@ -18,4 +18,4 @@ add_library(libbsnet
         neterr.hpp
         neterr.cpp
         registration.hpp
-        registration.cpp)
+        registration.cpp token.hpp token.cpp poller.hpp)

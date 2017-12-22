@@ -20,7 +20,7 @@ public:
   template <typename... Args> void emplace(Args &&... args) {
     static int64_t buf = 1;
     _rq.emplace(std::forward<Args>(args)...);
-    int n = ::write(_notify, &buf, sizeof(buf));
+    ssize_t n = ::write(_notify, &buf, sizeof(buf));
     assert(n == sizeof(buf));
   }
 

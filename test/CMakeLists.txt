@@ -75,7 +75,16 @@ install(TARGETS testtcp DESTINATION bin)
 
 add_executable(testregistration test_registration.cpp main.cpp)
 target_link_libraries(testregistration
-libbsnet
-libgtest
-libgmock)
+        libbsnet
+        libgtest
+        libgmock
+        )
 install(TARGETS testregistration DESTINATION bin)
+
+add_executable(testtoken test_token.cpp main.cpp)
+target_link_libraries(testtoken
+        libbsnet
+        libgtest
+        libgmock
+        )
+install(TARGETS testtoken DESTINATION bin)

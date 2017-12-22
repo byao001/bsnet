@@ -13,12 +13,12 @@ using Duration = std::chrono::milliseconds;
 #define DECL_ERR(clsname)                                                      \
   struct clsname : std::runtime_error {                                        \
     clsname();                                                                 \
-    clsname(const std::string &msg);                                           \
+    explicit clsname(const std::string &msg);                                  \
   }
 
 #define DECL_MSG_ERR(clsname)                                                  \
   struct clsname : std::runtime_error {                                        \
-    clsname(const std::string &msg);                                           \
+    explicit clsname(const std::string &msg);                                  \
   }
 
 #define IMPL_ERR(clsname)                                                      \

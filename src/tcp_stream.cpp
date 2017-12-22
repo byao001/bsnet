@@ -6,7 +6,7 @@
 #include "tcp_stream.hpp"
 #include "address.hpp"
 #include "neterr.hpp"
-#include "poller_epoll.hpp"
+#include "poller.hpp"
 #include "utility.hpp"
 #include <cassert>
 #include <cstring>
@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <cerrno>
 
 using namespace std;
 
@@ -30,7 +31,7 @@ void TcpStream::connect_nob(int sock, const struct sockaddr *addr,
     return;
   if (r == -1 && errno != EINPROGRESS)
     throw connecting_failed();
-  struct pollfd pfd;
+  struct ::pollfd pfd;
   pfd.fd = sock;
   pfd.events = POLLOUT;
   int n = ::poll(&pfd, 1, timeout);
