@@ -104,8 +104,9 @@ int Poller::poll(vector<Event> &events, const Duration *timeout) {
 
 int Poller::user_poll(vector<Event> &events) {
   assert(_rq->size() > 0);
-  _rq->get_all(events);
+  int n = static_cast<int>(_rq->get_all(events));
   int64_t v;
   ::read(_rq_notify, &v, sizeof(v));
+  return n;
 }
 }

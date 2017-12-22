@@ -5,9 +5,9 @@
 
 #pragma once
 
+#include "utility.hpp"
 #include <cstdint>
 #include <string>
-#include "utility.hpp"
 
 namespace bsnet {
 
@@ -18,8 +18,11 @@ typedef std::uint32_t Int;
 class Token {
   std::uint64_t _tok;
   explicit Token(std::uint64_t tok);
+
+public:
   explicit operator std::uint64_t() const;
   friend class TokenPool;
+  friend bool operator==(Token lhs, Token rhs);
 };
 
 class TokenPool {
@@ -33,7 +36,6 @@ private:
   std::uint32_t _idx;
   Int *_mem;
 };
-
 }
 
 namespace std {
